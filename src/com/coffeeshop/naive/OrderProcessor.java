@@ -4,42 +4,30 @@
  */
 package com.coffeeshop.naive;
 
-import java.io.FileWriter;
-import java.io.IOException;
-
 public class OrderProcessor {
+    private static final double TAX_RATE = 0.12;
     
+    // Dependencies are abstract interfaces rather than concrete classes (Low Coupling)
+    private final ReceiptPrinter receiptPrinter;
+    private final OrderRepository orderRepository;
+
+    // Dependency Injection via Constructor
+    public OrderProcessor(ReceiptPrinter receiptPrinter, OrderRepository orderRepository) {
+        this.receiptPrinter = receiptPrinter;
+        this.orderRepository = orderRepository;
+    }
+
     public void processOrder(String customerName, String coffeeType, double price) {
-        // --- RESPONSIBILITY 1: Business Logic & Tax Calculations ---
         System.out.println("[System] Calculating final totals...");
-        double localTax = 0.12; // Hardcoded 12% VAT
-        double finalPrice = price + (price * localTax);
         
-        // --- RESPONSIBILITY 2: Presentation & Formatting ---
-        System.out.println("\n===== COFFEE SHOP RECEIPT =====");
-        System.out.println("Customer: " + customerName);
-        System.out.println("Beverage: " + coffeeType);
-        System.out.println("Total Amount (incl. Tax): PHP " + finalPrice);
-        System.out.println("================================\n");
-        
-        // --- RESPONSIBILITY 3: Data Persistence & Storage ---
-        System.out.println("[System] Saving transaction logs to disk...");
-        FileWriter writer = null;
-        try {
-            // Hardcoded local text file deployment
-            writer = new FileWriter("orders_log.txt", true);
-            writer.write("Customer: " + customerName + " | Item: " + coffeeType + " | Total: " + finalPrice + "\n");
-            System.out.println("[Database] Log successfully written to orders_log.txt");
-        } catch (IOException e) {
-            System.out.println("[CRITICAL ERROR] Failed to write to file system: " + e.getMessage());
-        } finally {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        // Business Logic Responsibility
+        double localTax = price * TAX_RATE;
+        double finalPrice = price + localTax;
+
+        // Delegating Presentation Responsibility
+        receiptPrinter.printReceipt(customerName, coffeeType, price, localTax, finalPrice);
+
+        // Delegating Persistence Responsibility
+        orderRepository.saveOrder(customerName, coffeeType, finalPrice);
     }
 }
